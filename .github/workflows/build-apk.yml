@@ -1,4 +1,4 @@
-name: Build FrazFit APK
+name: Build FrazFit Release APK
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
@@ -18,12 +18,15 @@ jobs:
       - name: Extract FrazFit source
         run: |
           unzip -q FrazFit_v1.0_source.zip
+          echo "FrazFit source extracted"
           ls -la FrazFit
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: "npm"
+          cache-dependency-path: FrazFit/package-lock.json
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -43,17 +46,31 @@ jobs:
         working-directory: FrazFit
         run: chmod +x android/gradlew
 
-      - name: Build Android APK
+      - name: Build Release APK
         working-directory: FrazFit/android
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleRelease
 
-      - name: Prepare final APK
+      - name: Find and prepare APK
         run: |
-          cp FrazFit/android/app/build/outputs/apk/debug/app-debug.apk FrazFit-v1.0.apk
+          echo "Searching for release APK..."
 
-      - name: Upload FrazFit APK
+          APK_PATH=$(find FrazFit/android/app/build/outputs/apk/release -name "*.apk" | head -n 1)
+
+          if [ -z "$APK_PATH" ]; then
+            echo "Release APK not found"
+            exit 1
+          fi
+
+          echo "APK found at: $APK_PATH"
+
+          cp "$APK_PATH" FrazFit-v1.0-Release.apk
+
+          ls -lh FrazFit-v1.0-Release.apk
+
+      - name: Upload FrazFit Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: FrazFit-v1.0-APK
-          path: FrazFit-v1.0.apk
+          name: FrazFit-v1.0-Release-APK
+          path: FrazFit-v1.0-Release.apk
           if-no-files-found: error
+          retention-days: 30
