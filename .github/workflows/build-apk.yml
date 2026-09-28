@@ -35,7 +35,9 @@ jobs:
 
       - name: Install dependencies
         working-directory: FrazFit
-        run: npm install
+        run: |
+          npm install
+          npm install --save-dev babel-preset-expo
 
       - name: Generate Android project
         working-directory: FrazFit
