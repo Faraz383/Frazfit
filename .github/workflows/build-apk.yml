@@ -17,18 +17,17 @@ jobs:
 
       - name: Extract FrazFit source
         run: |
+          rm -rf FrazFit
           unzip -q FrazFit_v1.0_source.zip
-          echo "FrazFit source extracted"
+          echo "Source extracted successfully"
           ls -la FrazFit
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
-          cache-dependency-path: FrazFit/package-lock.json
 
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
@@ -40,31 +39,30 @@ jobs:
 
       - name: Generate Android project
         working-directory: FrazFit
-        run: npx expo prebuild --platform android --non-interactive
+        run: npx expo prebuild --platform android --non-interactive --clean
 
       - name: Make Gradle executable
         working-directory: FrazFit
         run: chmod +x android/gradlew
 
-      - name: Build Release APK
+      - name: Build standalone Release APK
         working-directory: FrazFit/android
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease --no-daemon
 
-      - name: Find and prepare APK
+      - name: Locate Release APK
         run: |
-          echo "Searching for release APK..."
+          echo "Searching for APK..."
+          find FrazFit/android/app/build/outputs/apk -type f -name "*.apk" -print
 
-          APK_PATH=$(find FrazFit/android/app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          APK_PATH=$(find FrazFit/android/app/build/outputs/apk/release -type f -name "*.apk" | head -n 1)
 
           if [ -z "$APK_PATH" ]; then
-            echo "Release APK not found"
+            echo "ERROR: Release APK not found"
             exit 1
           fi
 
-          echo "APK found at: $APK_PATH"
-
           cp "$APK_PATH" FrazFit-v1.0-Release.apk
-
+          echo "Final APK created:"
           ls -lh FrazFit-v1.0-Release.apk
 
       - name: Upload FrazFit Release APK
