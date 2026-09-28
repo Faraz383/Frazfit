@@ -19,7 +19,7 @@ jobs:
         run: |
           rm -rf FrazFit
           unzip -q FrazFit_v1.0_source.zip
-          echo "Source extracted successfully"
+          echo "FrazFit source extracted successfully"
           ls -la FrazFit
 
       - name: Setup Node.js
@@ -36,12 +36,14 @@ jobs:
       - name: Install dependencies
         working-directory: FrazFit
         run: |
-          npm install
-          npm install --save-dev babel-preset-expo
+          npm install --save-dev babel-preset-expo --legacy-peer-deps
+          echo "Dependencies installed successfully"
 
       - name: Generate Android project
         working-directory: FrazFit
-        run: npx expo prebuild --platform android --non-interactive --clean
+        run: |
+          npx expo prebuild --platform android --non-interactive --clean
+          echo "Android project generated successfully"
 
       - name: Make Gradle executable
         working-directory: FrazFit
@@ -49,22 +51,35 @@ jobs:
 
       - name: Build standalone Release APK
         working-directory: FrazFit/android
-        run: ./gradlew assembleRelease --no-daemon
+        run: |
+          ./gradlew assembleRelease --no-daemon
 
       - name: Locate Release APK
         run: |
-          echo "Searching for APK..."
-          find FrazFit/android/app/build/outputs/apk -type f -name "*.apk" -print
+          echo "Searching for release APK..."
 
-          APK_PATH=$(find FrazFit/android/app/build/outputs/apk/release -type f -name "*.apk" | head -n 1)
+          find FrazFit/android/app/build/outputs/apk \
+          -type f \
+          -name "*.apk" \
+          -print
+
+          APK_PATH=$(find \
+          FrazFit/android/app/build/outputs/apk/release \
+          -type f \
+          -name "*.apk" \
+          | head -n 1)
 
           if [ -z "$APK_PATH" ]; then
             echo "ERROR: Release APK not found"
             exit 1
           fi
 
+          echo "Release APK found at:"
+          echo "$APK_PATH"
+
           cp "$APK_PATH" FrazFit-v1.0-Release.apk
-          echo "Final APK created:"
+
+          echo "Final APK:"
           ls -lh FrazFit-v1.0-Release.apk
 
       - name: Upload FrazFit Release APK
